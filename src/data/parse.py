@@ -19,3 +19,10 @@ with open('./data.csv', 'r') as inf, open('./map-data.csv', 'w') as outf:
 
 with open('./map-data.json', 'w') as outf:
     outf.write(json.dumps(country_popul))
+
+
+
+
+
+
+

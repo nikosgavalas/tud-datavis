@@ -1,4 +1,4 @@
-const svg = d3.select("svg"),
+const svg = d3.select("#map"),
   width = +svg.attr("width"),
   height = +svg.attr("height");
 
