@@ -5,12 +5,13 @@
 Roadmap:
 
 1. do something about the null values in the scatter
-2. scatter sizes according to total population
-3. scatter colors same as map? (-working population?)
-4. make the charts responsive
-5. add the two other charts ?
+2. update the scatter using the same time bar (merge the map and scatter js files into one first?)
+3. scatter sizes according to total population
+4. scatter colors same as map? (-working population?)
+5. make the charts responsive
+6. add the two other charts ?
 
-Data schema:
+Data schema (data.js):
 
 ```
 {
