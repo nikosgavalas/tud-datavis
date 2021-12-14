@@ -14,12 +14,13 @@ with open('./data.csv', 'r') as inf, open('./scatter-data.csv', 'w') as outf:
                                             for i in range(2020, 1959, -1)])
     for row in reader:
         if (row[3] == 'SP.POP.1564.TO.ZS') or (row[3] == 'SP.DYN.TFRT.IN') or (row[3] == 'NY.GDP.MKTP.CD') :
+            if row[1] not in scatter_dict:
+                scatter_dict[row[1]] = {}
             scatter_dict[row[1]][row[2]] = row[4:]
+    # scatter_dict[row[1]]['popul'] = scatter_dict[row[1]].pop(row[2])
+    
+    
 
-        
-        
 
-            if WRITE_CSV:
-                writer.writerow([row[1]] + row[4:])
 with open('./scatter-data.json', 'w') as outf:
     outf.write(json.dumps(scatter_dict))
