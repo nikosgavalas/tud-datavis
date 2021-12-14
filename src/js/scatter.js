@@ -1,31 +1,61 @@
-// const svg = d3.select("#scatter"),
-//   width = +svg.attr("width"),
-//   height = +svg.attr("height");
+const scatter = {};
 
-// var coords = [0, 100, 200, 300, 400];
-var svg = d3.select("#test");
+scatter.margin = { top: 10, right: 30, bottom: 30, left: 30 };
+scatter.aspectRatio = 1.3;
+scatter.width =
+  document.getElementById("scatterArea").clientWidth -
+  scatter.margin.left -
+  scatter.margin.right;
+scatter.height =
+  scatter.width / scatter.aspectRatio -
+  scatter.margin.top -
+  scatter.margin.bottom;
 
-var circle = svg.selectAll("circle")
-    .data([32, 57, 112, 293]);
+scatter.svg = d3
+  .select("#scatterArea")
+  .append("svg")
+  .attr("width", scatter.width + scatter.margin.left + scatter.margin.right)
+  .attr("height", scatter.height + scatter.margin.top + scatter.margin.bottom)
+  .append("g")
+  .attr(
+    "transform",
+    "translate(" + scatter.margin.left + "," + scatter.margin.top + ")"
+  );
 
-var circleEnter = circle.enter().append("circle");
+scatter.svg.attr("width", scatter.width).attr("height", scatter.height);
 
-circleEnter.attr("cy", 60);
-circleEnter.attr("cx", function(d, i) { return i * 100 + 30; });
-circleEnter.attr("r", function(d) { return Math.sqrt(d); });
+// function resize() {
+//   scatter.width = document.getElementById("scatterArea").clientWidth;
+//   scatter.height = scatter.width / scatter.aspectRatio;
+//   scatter.svg.attr("width", scatter.width).attr("height", scatter.height);
+// }
 
-// d3.json("./data/scatter-data.json").then(function (data) {
-//   const circle = svg.append("g")
-//   .attr("stroke", "black")
-//   .selectAll("circle")
-//   .data(data)
-//   .join("circle")
-//   // .sort((a, b) => d3.descending(a.population, b.population))
-//   .attr("cx", d => x(d.income))
-//   .attr("cy", d => y(d.lifeExpectancy))
-//   .attr("r", d => radius(d.population))
-//   .attr("fill", d => color(d.region))
-//   .call(circle => circle.append("title")
-//   .text(d => [d.name, d.region].join("\n")));
+// window.onresize = resize;
 
-// });
+// gdp
+var x = d3.scaleLog([1, 100000000], [0, scatter.width]);
+scatter.svg
+  .append("g")
+  .attr("transform", "translate(0," + scatter.height + ")")
+  .call(d3.axisBottom(x).tickSize(-scatter.height).ticks());
+
+// population growth
+var y = d3.scaleLinear([-5, 5], [scatter.height, 0]);
+scatter.svg.append("g").call(d3.axisLeft(y).tickSize(-scatter.width).ticks());
+
+scatter.svg.selectAll(".tick line").attr("stroke", "lightgray");
+
+scatter.svg
+  .append("g")
+  .selectAll("circle")
+  .data(Object.keys(data))
+  .enter()
+  .append("circle")
+  .attr("cx", (d, i) => {
+    return x(parseFloat(data[d]["gdp"][0]) / 1000000);
+  })
+  .attr("cy", (d, i) => {
+    return y(parseFloat(data[d]["population-growth"][0]));
+  })
+  .attr("r", 10)
+  .style("fill", "#69b3a2");
