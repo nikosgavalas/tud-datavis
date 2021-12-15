@@ -4,12 +4,13 @@
 
 Roadmap:
 
-1. do something about the null values in the scatter
-2. update the scatter using the same time bar (merge the map and scatter js files into one first?)
-3. scatter sizes according to total population
-4. scatter colors same as map? (-working population?)
-5. make the charts responsive
-6. add the two other charts ?
+- [x] do something about the null values in the scatter
+- [x] update the scatter using the same time bar (merge the map and scatter js files into one first?)
+- [x] scatter sizes according to total population
+- [x] scatter colors same as map? (-working population?)
+- [x] focus dot on mouseover on map
+- [ ] make the charts responsive
+- [ ] add the two other charts ?
 
 Data schema (data.js):
 
@@ -19,6 +20,7 @@ Data schema (data.js):
     "population-young": [...],
     "population-working-age": [...],
     "population-old": [...],
+    "population-total": [...],
     "population-growth": [...],
     "life-expectancy": [...],
     gdp: [...],
