@@ -57,5 +57,13 @@ scatter.svg
   .attr("cy", (d, i) => {
     return y(parseFloat(data[d]["population-growth"][0]));
   })
-  .attr("r", 10)
+  .attr("r", (d, i) => {
+    var x = data[d]["gdp"][0];
+    var y = data[d]["population-growth"][0];
+    var r = data[d]["population"][0];
+    if (x == ".." || y == "..") {
+      return 0;
+    }
+    return 10;
+  })
   .style("fill", "#69b3a2");

@@ -17,7 +17,7 @@ with open('./data.csv', 'r') as inf:
             data[row[1]]['population-old'] = row[4:]
         if row[3] == 'SP.POP.GROW':
             data[row[1]]['population-growth'] = row[4:]
-        if row[3] == 'SP.POP.TOTL,38928341':
+        if row[3] == 'SP.POP.TOTL':
             data[row[1]]['population-total'] = row[4:]
         if row[3] == 'NY.GDP.MKTP.CD':
             data[row[1]]['gdp'] = row[4:]
