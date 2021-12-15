@@ -85,7 +85,7 @@ scatter.svg.attr("width", scatter.width).attr("height", scatter.height);
 
 // scatter
 
-var x = d3.scaleLog([10, 200000000], [0, scatter.width]);
+var x = d3.scaleLog([10, 50000000], [0, scatter.width]);
 scatter.svg
   .append("g")
   .attr("transform", "translate(0," + scatter.height + ")")
@@ -94,7 +94,7 @@ scatter.svg
 var y = d3.scaleLinear([-2, 4.5], [scatter.height, 0]);
 scatter.svg.append("g").call(d3.axisLeft(y).tickSize(-scatter.width).ticks());
 
-var radius = d3.scaleLinear([0, 2000000000], [3, 50]);
+var radius = d3.scaleLinear([0, 2000000000], [3, 70]);
 
 scatter.svg.selectAll(".tick line").attr("stroke", "lightgray");
 
@@ -147,7 +147,7 @@ function updateTime(inp) {
 
 updateTime(2020);
 
-d3.select("#time-slider").on("input", function (d) {
+d3.select("#timeSlider").on("input", function (d) {
   updateTime(this.value);
 });
 

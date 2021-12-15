@@ -9,6 +9,8 @@ Roadmap:
 - [x] scatter sizes according to total population
 - [x] scatter colors same as map? (-working population?)
 - [x] focus dot on mouseover on map
+- [ ] display axis names
+- [ ] axis names and chart titles
 - [ ] make the charts responsive
 - [ ] add the two other charts ?
 

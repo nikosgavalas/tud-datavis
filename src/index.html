@@ -27,16 +27,26 @@
             <div class="card-header">Scatter</div>
             <div id="scatterArea"></div>
           </div>
-          <input
-            class="form-range"
-            type="range"
-            name="time-slider"
-            id="time-slider"
-            min="1960"
-            max="2020"
-            step="1"
-            value="2020"
-          />
+          <div class="row align-items-center">
+            <div class="col-lg-11">
+              <input
+                class="form-range"
+                type="range"
+                name="timeSlider"
+                id="timeSlider"
+                min="1960"
+                max="2020"
+                step="1"
+                value="2020"
+                oninput="selectedTime.value=timeSlider.value"
+              />
+            </div>
+            <div class="col-lg-1">
+              <b>
+                <output name="selectedTime" id="selectedTime">2020</output>
+              </b>
+            </div>
+          </div>
         </div>
 
         <div class="col-lg-6">
