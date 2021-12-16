@@ -20,7 +20,11 @@ map.colorRange = d3.scaleLinear([50, 75], ["#000080", "white"]);
 
 map.onMouseOver = function (d) {
   d3.selectAll(".country").transition().duration(200).style("opacity", 0.5);
-  d3.select(this).transition().duration(200).style("opacity", 1);
+  d3.select(this)
+    .transition()
+    .duration(200)
+    .style("opacity", 1)
+    .style("stroke", "black");
 
   // small hack to get the id, I don't know a better way
   var idSelected = d3.select(this)._groups[0][0].id;
@@ -38,7 +42,11 @@ map.onMouseOver = function (d) {
 };
 
 map.onMouseLeave = function (d) {
-  d3.selectAll(".country").transition().duration(200).style("opacity", 1);
+  d3.selectAll(".country")
+    .transition()
+    .duration(200)
+    .style("opacity", 1)
+    .style("stroke", "transparent");
   d3.selectAll(".scatter-circle")
     .transition()
     .duration(200)
@@ -113,6 +121,39 @@ var radius = d3.scaleLinear([0, 2000000000], [3, 70]);
 
 scatter.svg.selectAll(".tick line").attr("stroke", "lightgray");
 
+scatter.onMouseOver = function (d) {
+  d3.selectAll(".scatter-circle")
+    .transition()
+    .duration(200)
+    .style("opacity", 0.2);
+  d3.select(this).transition().duration(200).style("opacity", 1);
+
+  d3.selectAll(".country").transition().duration(200).style("opacity", 0.5);
+
+  // small hack to get the id, I don't know a better way
+  var idSelected = d3.select(this)._groups[0][0].id;
+  var countryId = idSelected.split("-")[2];
+  d3.select(`#country-${countryId}`)
+    .transition()
+    .duration(200)
+    .style("opacity", 1)
+    .style("stroke-width", 1)
+    .style("stroke", "black");
+};
+
+scatter.onMouseLeave = function (d) {
+  d3.selectAll(".country")
+    .transition()
+    .duration(200)
+    .style("opacity", 1)
+    .style("stroke", "transparent");
+  d3.selectAll(".scatter-circle")
+    .transition()
+    .duration(200)
+    .style("opacity", 0.9)
+    .style("stroke-width", 0.5);
+};
+
 var renderedScatter = scatter.svg
   .append("g")
   .selectAll("circle")
@@ -123,7 +164,9 @@ var renderedScatter = scatter.svg
   .attr("id", (d) => `scatter-circle-${d}`)
   .style("stroke", "black")
   .style("stroke-width", 0.5)
-  .style("opacity", 0.9);
+  .style("opacity", 0.9)
+  .on("mouseover", scatter.onMouseOver)
+  .on("mouseleave", scatter.onMouseLeave);
 
 // time updates
 
