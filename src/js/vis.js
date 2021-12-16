@@ -59,7 +59,7 @@ var renderedMap = map.svg
 
 const scatter = {};
 
-scatter.margin = { top: 10, right: 30, bottom: 30, left: 30 };
+scatter.margin = { top: 10, right: 30, bottom: 30, left: 40 };
 scatter.aspectRatio = 1.3;
 scatter.width =
   document.getElementById("scatterArea").clientWidth -
@@ -90,9 +90,24 @@ scatter.svg
   .append("g")
   .attr("transform", "translate(0," + scatter.height + ")")
   .call(d3.axisBottom(x).tickSize(-scatter.height).ticks());
+scatter.svg
+  .append("text")
+  .attr("class", "chart-label")
+  .attr("text-anchor", "end")
+  .attr("x", scatter.width / 2 + scatter.margin.left)
+  .attr("y", scatter.height + scatter.margin.top + 15)
+  .text("GDP (millions USD)");
 
 var y = d3.scaleLinear([-2, 4.5], [scatter.height, 0]);
 scatter.svg.append("g").call(d3.axisLeft(y).tickSize(-scatter.width).ticks());
+scatter.svg
+  .append("text")
+  .attr("class", "chart-label")
+  .attr("text-anchor", "end")
+  .attr("transform", "rotate(-90)")
+  .attr("y", -scatter.margin.left + 12)
+  .attr("x", -scatter.margin.top - scatter.height / 3)
+  .text("Population Growth Rate");
 
 var radius = d3.scaleLinear([0, 2000000000], [3, 70]);
 

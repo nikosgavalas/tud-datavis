@@ -24,11 +24,22 @@
       <div class="row">
         <div class="col-lg-6">
           <div class="card">
-            <div class="card-header">Scatter</div>
+            <div class="card-header">
+              Population Growth Rate vs GDP (in millions USD) for all countries
+              per year.
+            </div>
             <div id="scatterArea"></div>
+            <div class="card-body">
+              <p class="card-text">
+                Area and colour are proportional to Population and Percent of
+                Working-Age Population (15-64) respectively. Move the slider
+                below to visualise the change over the years.
+              </p>
+            </div>
           </div>
+
           <div class="row align-items-center">
-            <div class="col-lg-11">
+            <div class="col-11">
               <input
                 class="form-range"
                 type="range"
@@ -41,7 +52,7 @@
                 oninput="selectedTime.value=timeSlider.value"
               />
             </div>
-            <div class="col-lg-1">
+            <div class="col-1">
               <b>
                 <output name="selectedTime" id="selectedTime">2020</output>
               </b>
@@ -51,8 +62,16 @@
 
         <div class="col-lg-6">
           <div class="card">
-            <div class="card-header">Map</div>
+            <div class="card-header">Demographic Distribution</div>
             <div id="mapArea"></div>
+            <div class="card-body">
+              <p class="card-text">
+                The colour of each country indicates the percentage of its
+                working-age population (15-64). The darker the tone, the lower
+                the percentage. Black colour denotes missing data. Hover over
+                the countries with the mouse for effect.
+              </p>
+            </div>
           </div>
         </div>
       </div>
