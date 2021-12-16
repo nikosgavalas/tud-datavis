@@ -85,7 +85,7 @@ scatter.svg.attr("width", scatter.width).attr("height", scatter.height);
 
 // scatter
 
-var x = d3.scaleLog([10, 50000000], [0, scatter.width]);
+var x = d3.scaleLog([30, 200000], [0, scatter.width]);
 scatter.svg
   .append("g")
   .attr("transform", "translate(0," + scatter.height + ")")
@@ -96,7 +96,7 @@ scatter.svg
   .attr("text-anchor", "end")
   .attr("x", scatter.width / 2 + scatter.margin.left)
   .attr("y", scatter.height + scatter.margin.top + 15)
-  .text("GDP (millions USD)");
+  .text("GDP per capita (USD)");
 
 var y = d3.scaleLinear([-2, 4.5], [scatter.height, 0]);
 scatter.svg.append("g").call(d3.axisLeft(y).tickSize(-scatter.width).ticks());
@@ -107,7 +107,7 @@ scatter.svg
   .attr("transform", "rotate(-90)")
   .attr("y", -scatter.margin.left + 12)
   .attr("x", -scatter.margin.top - scatter.height / 3)
-  .text("Population Growth Rate");
+  .text("Population Growth Rate (%)");
 
 var radius = d3.scaleLinear([0, 2000000000], [3, 70]);
 
@@ -133,22 +133,25 @@ function updateTime(inp) {
     .transition()
     .duration(1000)
     .attr("cx", (d, i) => {
-      return x(parseFloat(data[d]["gdp"][idx]) / 1000000);
+      return x(parseFloat(data[d]["gdp-per-capita"][idx]));
     })
     .attr("cy", (d, i) => {
       return y(parseFloat(data[d]["population-growth"][idx]));
     })
     .attr("r", (d, i) => {
-      var x = data[d]["gdp"][idx];
+      var x = data[d]["gdp-per-capita"][idx];
       var y = data[d]["population-growth"][idx];
       var r = radius(data[d]["population-total"][idx]);
-      if (x == ".." || y == "..") {
+      if (x == ".." || y == ".." || r == "..") {
         return 0;
       }
       return r;
     })
     .style("fill", (d, i) => {
       var w = data[d]["population-working-age"][idx];
+      if (w == "..") {
+        return "white";
+      }
       return map.colorRange(w);
     });
   renderedMap.attr("fill", (d, i) => {
