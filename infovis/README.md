@@ -19,15 +19,10 @@ Data schema (data.js):
 ```
 {
   AFG: {
-    "population-young": [...],
     "population-working-age": [...],
-    "population-old": [...],
     "population-total": [...],
     "population-growth": [...],
-    "life-expectancy": [...],
-    gdp: [...],
-    "gdp-growth": [...],
-    fertility: [...],
+    "gdp-per-capita": [...],
   },
 }
 ```
