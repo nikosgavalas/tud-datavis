@@ -77,6 +77,8 @@ std::string_view Volume::fileName() const
 float Volume::getVoxel(int x, int y, int z) const
 {
     const size_t i = size_t(x + m_dim.x * (y + m_dim.y * z));
+    if (i > m_data.size() - 1) // prevent segfault 
+        return 1.0f;
     return static_cast<float>(m_data[i]);
 }
 
@@ -121,7 +123,38 @@ float Volume::getSampleNearestNeighbourInterpolation(const glm::vec3& coord) con
 // This function returns the trilinear interpolated value at the continuous 3D position given by coord.
 float Volume::getSampleTriLinearInterpolation(const glm::vec3& coord) const
 {
-    return 0.0f;
+    // check if the coordinate is within volume boundaries,
+    // since we only look at direct neighbours we only need to check within 0.5
+    if (glm::any(glm::lessThan(coord, glm::vec3(0))) ||
+        glm::any(glm::greaterThanEqual(coord, glm::vec3(m_dim))))
+        return 0.0f;
+
+    int x = static_cast<int>(coord.x);
+    int y = static_cast<int>(coord.y);
+    int z = static_cast<int>(coord.z);
+
+    float dx = coord.x - x;
+    float dy = coord.y - y;
+    float dz = coord.z - z;
+
+    float f0 = getVoxel(x, y, z);
+    float f1 = getVoxel(x + 1, y, z);
+    float f2 = getVoxel(x, y + 1, z);
+    float f3 = getVoxel(x + 1, y + 1, z);
+    float f4 = getVoxel(x, y, z + 1);
+    float f5 = getVoxel(x + 1, y, z + 1);
+    float f6 = getVoxel(x, y + 1, z + 1);
+    float f7 = getVoxel(x + 1, y + 1, z + 1);
+
+    float f01 = linearInterpolate(f0, f1, dx);
+    float f23 = linearInterpolate(f2, f3, dx);
+    float f45 = linearInterpolate(f4, f5, dx);
+    float f67 = linearInterpolate(f6, f7, dx);
+
+    float f0123 = linearInterpolate(f01, f23, dy);
+    float f4567 = linearInterpolate(f45, f67, dy);
+
+    return linearInterpolate(f0123, f4567, dz);
 }
 
 // This function linearly interpolates the value at X using incoming values g0 and g1 given a factor (equal to the positon of x in 1D)
@@ -130,7 +163,7 @@ float Volume::getSampleTriLinearInterpolation(const glm::vec3& coord) const
 //   factor
 float Volume::linearInterpolate(float g0, float g1, float factor)
 {
-    return 0.0f;
+    return g0 * (1 - factor) + g1 * factor;
 }
 
 // This function bi-linearly interpolates the value at the given continuous 2D XY coordinate for a fixed integer z coordinate.
