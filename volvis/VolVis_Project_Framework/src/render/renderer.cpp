@@ -176,35 +176,65 @@ glm::vec4 Renderer::traceRayMIP(const Ray& ray, float sampleStep) const
 glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
 {
     static constexpr glm::vec3 isoColor { 0.8f, 0.8f, 0.2f };
+    static constexpr glm::vec3 noColor { 0.0f, 0.0f, 0.0f };
 
-    glm::vec3 ret { 0.0f, 0.0f, 0.0f };
+    glm::vec3 color = noColor;
 
-    // Incrementing samplePos directly instead of recomputing it each frame gives a measureable speed-up.
     glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
+    glm::vec3 accuratePos = samplePos;
     const glm::vec3 increment = sampleStep * ray.direction;
+    // for each sample across the ray...
+    float prev = ray.tmin;
     for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
         const float val = m_pVolume->getSampleInterpolate(samplePos);
+        // if the sample has a value greater or equal to the isoValue
         if (val >= m_config.isoValue) {
-            ret = isoColor;
-            break; // Speedup
+            // find a better approximation of the iso surface using binary search
+            float betterT = bisectionAccuracy(ray, prev, t, m_config.isoValue);
+            // save this approximation and set the pixel color to the iso surface color
+            accuratePos = ray.origin + betterT * ray.direction;
+            color = isoColor;
+            // and leave the sampling loop
+            break;
         }
+        prev = t;
     }
 
-    if (m_config.volumeShading)
-        return glm::vec4(
-            computePhongShading(ret, m_pGradientVolume->getGradient(samplePos.x, samplePos.y, samplePos.z),
-            m_pCamera->position(), m_pCamera->position())
-            , 1.0f);
-    return glm::vec4(ret , 1.0f);
+    if (m_config.volumeShading)       // if shading is enabled from the config, apply Phong-shading to color
+        color = computePhongShading(
+            color,                    // sample color
+            m_pGradientVolume->getGradient(accuratePos.x, accuratePos.y, accuratePos.z),  // sample gradient
+            m_pCamera->position(),    // camera as light vector
+            m_pCamera->position()     // camera is the view vector
+        );
+    return glm::vec4(color, 1.0f);    // return the color with 100% opacity
 }
 
 // ======= TODO: IMPLEMENT ========
 // Given that the iso value lies somewhere between t0 and t1, find a t for which the value
 // closely matches the iso value (less than 0.01 difference). Add a limit to the number of
-// iterations such that it does not get stuck in degerate cases.
+// iterations such that it does not get stuck in degenerate cases.
 float Renderer::bisectionAccuracy(const Ray& ray, float t0, float t1, float isoValue) const
 {
-    return 0.0f;
+    // binary search to find a better t
+    // assuming t0 <= t1
+    float mid = 0.0f;
+    float tMid = 0.0f;
+    int maxIter = 100;
+    int iter = 0;
+    while (iter < maxIter) {
+        tMid = (t0 + t1) / 2;
+        mid = m_pVolume->getSampleInterpolate(ray.origin + tMid * ray.direction);
+        if (glm::abs(isoValue - mid) < 0.01f) {
+            break;
+        }
+        if (mid < isoValue)
+            t0 = tMid;
+        if (mid > isoValue)
+            t1 = tMid;
+        iter++;
+    }
+    return tMid;
 }
 
 // ======= TODO: IMPLEMENT ========
@@ -217,9 +247,9 @@ float Renderer::bisectionAccuracy(const Ray& ray, float t0, float t1, float isoV
 glm::vec3 Renderer::computePhongShading(const glm::vec3& color, const volume::GradientVoxel& gradient, const glm::vec3& L, const glm::vec3& V)
 {
     const float ka = 0.1;
-    const float ks = 0.2;  // 0.4...
-    const float kd = 0.7;  // .. and 0.5 here look better but cause a segfault for some reason (?)
-    const int a = 1;
+    const float ks = 0.7;
+    const float kd = 0.2;
+    const int a = 4;
 
     glm::vec3 LNorm = glm::normalize(L);
     glm::vec3 VNorm = glm::normalize(V);
@@ -228,7 +258,7 @@ glm::vec3 Renderer::computePhongShading(const glm::vec3& color, const volume::Gr
     glm::vec3 R = 2 * glm::dot(LNorm, GNorm) * GNorm - LNorm;
     glm::vec3 RNorm = glm::normalize(R);
 
-    // Phone Shading equation
+    // Phone Shading equation from wikipedia
     glm::vec3 ret = ka * color + kd * glm::dot(LNorm, VNorm) * color + ks * (float) glm::pow(glm::dot(RNorm, VNorm), a) * color;
     return ret;
 }
@@ -238,22 +268,35 @@ glm::vec3 Renderer::computePhongShading(const glm::vec3& color, const volume::Gr
 // Use getTFValue to compute the color for a given volume value according to the 1D transfer function.
 glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
 {
-    glm::vec4 ret = glm::vec4(0.0f);
+    glm::vec4 aggregatedColor = glm::vec4(0.0f);
 
     glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
     const glm::vec3 increment = sampleStep * ray.direction;
-    for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
-        const float val = m_pVolume->getSampleInterpolate(samplePos);
-        // glm::vec4 tf = getTFValue(val);
-        // glm::vec3 rgb = glm::vec3(tf.x, tf.y, tf.z);
-        // glm::vec4 shade = glm::vec4(
-        //     computePhongShading(rgb, m_pGradientVolume->getGradient(samplePos.x, samplePos.y, samplePos.z), m_pCamera->position(), m_pCamera->position())
-        //     , tf.w
-        // );
-        ret += getTFValue(val); //shade;
-    }
 
-    return ret;
+    // sample across the ray
+    for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
+        float val = m_pVolume->getSampleInterpolate(samplePos);
+        volume::GradientVoxel grad = m_pGradientVolume->getGradient(samplePos.x, samplePos.y, samplePos.z);
+
+        // map the value to the transfer function
+        glm::vec4 tf = getTFValue(val);
+
+        // apply shading if in config
+        if (m_config.volumeShading) {
+            // get the shading value and aggregate it across the ray
+            // there's a bug here but I can't find its cause..
+            glm::vec3 rgb = glm::vec3(tf.r, tf.g, tf.b);
+            tf = glm::vec4(computePhongShading(rgb, grad, m_pCamera->position(), m_pCamera->position()), tf.a);
+        }
+
+        // aggregate using front-to-back compositing
+        aggregatedColor.r += (1 - aggregatedColor.r) * tf.a * tf.r;
+        aggregatedColor.g += (1 - aggregatedColor.g) * tf.a * tf.g;
+        aggregatedColor.b += (1 - aggregatedColor.b) * tf.a * tf.b;
+        aggregatedColor.a += (1 - aggregatedColor.a) * tf.a;
+    }
+    
+    return aggregatedColor;
 }
 
 // ======= DO NOT MODIFY THIS FUNCTION ========
@@ -272,7 +315,28 @@ glm::vec4 Renderer::getTFValue(float val) const
 // Use the getTF2DOpacity function that you implemented to compute the opacity according to the 2D transfer function.
 glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
 {
-    return glm::vec4(0.0f);
+    glm::vec4 aggregatedColor = glm::vec4(0.0f);
+
+    glm::vec3 samplePos = ray.origin + ray.tmin * ray.direction;
+    const glm::vec3 increment = sampleStep * ray.direction;
+    // we sample the ray as usual
+    for (float t = ray.tmin; t <= ray.tmax; t += sampleStep, samplePos += increment) {
+        float val = m_pVolume->getSampleInterpolate(samplePos);
+        volume::GradientVoxel grad = m_pGradientVolume->getGradient(samplePos.x, samplePos.y, samplePos.z);
+
+        // get the color from the UI
+        glm::vec4 color = m_config.TF2DColor;
+        // we calculate the opacity through the 2D transfer function
+        glm::vec4 colorWithOpacity = glm::vec4(color.r, color.g, color.b, getTF2DOpacity(val, grad.magnitude));
+
+        // aggregate using front-to-back compositing
+        aggregatedColor.r += (1 - aggregatedColor.r) * colorWithOpacity.a * colorWithOpacity.r;
+        aggregatedColor.g += (1 - aggregatedColor.g) * colorWithOpacity.a * colorWithOpacity.g;
+        aggregatedColor.b += (1 - aggregatedColor.b) * colorWithOpacity.a * colorWithOpacity.b;
+        aggregatedColor.a += (1 - aggregatedColor.a) * colorWithOpacity.a;
+    }
+
+    return aggregatedColor;
 }
 
 // ======= TODO: IMPLEMENT ========
@@ -284,7 +348,23 @@ glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
 // The 2D transfer function settings can be accessed through m_config.TF2DIntensity and m_config.TF2DRadius.
 float Renderer::getTF2DOpacity(float intensity, float gradientMagnitude) const
 {
-    return 0.0f;
+    float maxGradient = m_pGradientVolume->maxMagnitude();
+    float radius = m_config.TF2DRadius;
+    float intensityApex = m_config.TF2DIntensity;
+
+    float opacity = 0.0f;
+
+    // check if the given point (intensity, gradientMagnitude) is inside the triangle of the 2DTF function
+    if (gradientMagnitude >= (maxGradient / radius) * (intensity - intensityApex) &&
+        gradientMagnitude >= (maxGradient / radius) * (intensityApex - intensity)) {
+            // do a linear interpolation between the edge of the triangle and the vertical line passing from its apex
+            // in the vertical -> opacity = max
+            // in the edges -> opacity = 0
+            float f = (intensity - intensityApex) / (radius * gradientMagnitude);
+            opacity = m_config.TF2DColor.a * (1 - f) + 0 * f;  // for clarity
+        }
+    
+    return opacity;
 }
 
 // This function computes if a ray intersects with the axis-aligned bounding box around the volume.

@@ -77,8 +77,8 @@ std::string_view Volume::fileName() const
 float Volume::getVoxel(int x, int y, int z) const
 {
     const size_t i = size_t(x + m_dim.x * (y + m_dim.y * z));
-    if (i > m_data.size() - 1) // prevent segfault 
-        return 1.0f;
+    if (i > m_data.size() - 1)  // added these lines
+        return 1.0f;            // to prevent segfaults 
     return static_cast<float>(m_data[i]);
 }
 
@@ -137,6 +137,7 @@ float Volume::getSampleTriLinearInterpolation(const glm::vec3& coord) const
     float dy = coord.y - y;
     float dz = coord.z - z;
 
+    // get all surrounding voxels
     float f0 = getVoxel(x, y, z);
     float f1 = getVoxel(x + 1, y, z);
     float f2 = getVoxel(x, y + 1, z);
@@ -146,29 +147,38 @@ float Volume::getSampleTriLinearInterpolation(const glm::vec3& coord) const
     float f6 = getVoxel(x, y + 1, z + 1);
     float f7 = getVoxel(x + 1, y + 1, z + 1);
 
+    // we know tri-linear interpolation can be split in interpolations in lower dimensions
+    // here we use 4+2+1 linear interpolations to calculate the interpolation in 3 axes
+    // for the 1D linear interpolation we make use of the linearInterpolate function
+
+    // interpolate x
     float f01 = linearInterpolate(f0, f1, dx);
     float f23 = linearInterpolate(f2, f3, dx);
     float f45 = linearInterpolate(f4, f5, dx);
     float f67 = linearInterpolate(f6, f7, dx);
 
+    // interpolate y
     float f0123 = linearInterpolate(f01, f23, dy);
     float f4567 = linearInterpolate(f45, f67, dy);
 
+    // interpolate z
     return linearInterpolate(f0123, f4567, dz);
 }
 
-// This function linearly interpolates the value at X using incoming values g0 and g1 given a factor (equal to the positon of x in 1D)
+// This function linearly interpolates the value at X using incoming values g0 and g1 given a factor (equal to the position of x in 1D)
 //
 // g0--X--------g1
 //   factor
 float Volume::linearInterpolate(float g0, float g1, float factor)
 {
+    // writing the expression this way lowers the risk of floating point errors
     return g0 * (1 - factor) + g1 * factor;
 }
 
 // This function bi-linearly interpolates the value at the given continuous 2D XY coordinate for a fixed integer z coordinate.
 float Volume::biLinearInterpolate(const glm::vec2& xyCoord, int z) const
 {
+    // we ended up not using this function
     return 0.0f;
 }
 

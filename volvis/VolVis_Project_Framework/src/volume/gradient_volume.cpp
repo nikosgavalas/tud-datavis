@@ -129,7 +129,9 @@ GradientVoxel GradientVolume::linearInterpolate(const GradientVoxel& g0, const G
 // This function returns a gradientVoxel without using interpolation
 GradientVoxel GradientVolume::getGradient(int x, int y, int z) const
 {
-    const size_t i = static_cast<size_t>(x + m_dim.x * (y + m_dim.y * z));
+    size_t i = static_cast<size_t>(x + m_dim.x * (y + m_dim.y * z));
+    if (i > m_data.size() - 1)  // added these lines
+        i = 0;            // to prevent segfaults 
     return m_data[i];
 }
 }
