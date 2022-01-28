@@ -200,13 +200,20 @@ glm::vec4 Renderer::traceRayISO(const Ray& ray, float sampleStep) const
         prev = t;
     }
 
-    if (m_config.volumeShading)       // if shading is enabled from the config, apply Phong-shading to color
-        color = computePhongShading(
-            color,                    // sample color
-            m_pGradientVolume->getGradient(accuratePos.x, accuratePos.y, accuratePos.z),  // sample gradient
-            m_pCamera->position(),    // camera as light vector
-            m_pCamera->position()     // camera is the view vector
-        );
+    volume::GradientVoxel grad = m_pGradientVolume->getGradient(accuratePos.x, accuratePos.y, accuratePos.z);
+
+    if (m_config.volumeShading) {         // if shading is enabled from the config
+        if (m_config.toneBasedShading) {  // use toneBasedShading to determine whether to use cool-warm or Phong shading
+            color = computeToneBasedShading(color, grad);
+        } else {
+            color = computePhongShading(
+                color,                    // sample color
+                grad,                     // sample gradient
+                m_pCamera->position(),    // camera as light vector
+                m_pCamera->position()     // camera is the view vector
+            );
+        }
+    }
     return glm::vec4(color, 1.0f);    // return the color with 100% opacity
 }
 
@@ -263,6 +270,25 @@ glm::vec3 Renderer::computePhongShading(const glm::vec3& color, const volume::Gr
     return ret;
 }
 
+// Implementation of cool to warm shading
+// Gooch, Amy, et al. "A non-photorealistic lighting model for automatic technical illustration." 1998.
+glm::vec3 Renderer::computeToneBasedShading(const glm::vec3& color, const volume::GradientVoxel& gradient)
+{
+    float b = 0.4f;
+    float y = 0.4f;
+    float alpha = 0.2f;
+    float beta = 0.6f;
+
+    glm::vec3 kBlue = glm::vec3(0.0f, 0.0f, b);
+    glm::vec3 kYellow = glm::vec3(y, y, 0.0f);
+
+    glm::vec3 kCool = kBlue + alpha * color;
+    glm::vec3 kWarm = kYellow + beta * color;
+
+    float f = (1 + glm::dot(color, gradient.dir)) / 2;
+    return f * kCool + (1 - f) * kWarm;
+}
+
 // ======= TODO: IMPLEMENT ========
 // In this function, implement 1D transfer function raycasting.
 // Use getTFValue to compute the color for a given volume value according to the 1D transfer function.
@@ -290,9 +316,9 @@ glm::vec4 Renderer::traceRayComposite(const Ray& ray, float sampleStep) const
         }
 
         // aggregate using front-to-back compositing
-        aggregatedColor.r += (1 - aggregatedColor.r) * tf.a * tf.r;
-        aggregatedColor.g += (1 - aggregatedColor.g) * tf.a * tf.g;
-        aggregatedColor.b += (1 - aggregatedColor.b) * tf.a * tf.b;
+        aggregatedColor.r += (1 - aggregatedColor.a) * tf.a * tf.r;
+        aggregatedColor.g += (1 - aggregatedColor.a) * tf.a * tf.g;
+        aggregatedColor.b += (1 - aggregatedColor.a) * tf.a * tf.b;
         aggregatedColor.a += (1 - aggregatedColor.a) * tf.a;
     }
     
@@ -330,9 +356,9 @@ glm::vec4 Renderer::traceRayTF2D(const Ray& ray, float sampleStep) const
         glm::vec4 colorWithOpacity = glm::vec4(color.r, color.g, color.b, getTF2DOpacity(val, grad.magnitude));
 
         // aggregate using front-to-back compositing
-        aggregatedColor.r += (1 - aggregatedColor.r) * colorWithOpacity.a * colorWithOpacity.r;
-        aggregatedColor.g += (1 - aggregatedColor.g) * colorWithOpacity.a * colorWithOpacity.g;
-        aggregatedColor.b += (1 - aggregatedColor.b) * colorWithOpacity.a * colorWithOpacity.b;
+        aggregatedColor.r += (1 - aggregatedColor.a) * colorWithOpacity.a * colorWithOpacity.r;
+        aggregatedColor.g += (1 - aggregatedColor.a) * colorWithOpacity.a * colorWithOpacity.g;
+        aggregatedColor.b += (1 - aggregatedColor.a) * colorWithOpacity.a * colorWithOpacity.b;
         aggregatedColor.a += (1 - aggregatedColor.a) * colorWithOpacity.a;
     }
 
